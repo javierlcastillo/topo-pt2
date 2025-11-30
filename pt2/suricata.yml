@@ -1,0 +1,52 @@
+%YAML 1.1
+---
+
+# Step 1: configure inspection interfaces
+af-packet:
+  - interface: ids-eth0
+    threads: 1
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+  - interface: ids-eth1
+    threads: 1
+    cluster-id: 98
+    cluster-type: cluster_flow
+    defrag: yes
+
+# Step 2: configure application-layer protocol parsing
+app-layer:
+  protocols:
+    http:
+      enabled: yes
+    ftp:
+      enabled: yes
+    dns:
+      tcp:
+        enabled: yes
+      udp:
+        enabled: yes
+    tls:
+      enabled: yes
+    arp:
+      enabled: yes
+      detection-enabled: yes
+
+# Step 3: define your network addresses
+vars:
+  address-groups:
+    # All of the internal and remote networks
+    HOME_NET: "[10.0.1.0/27,10.0.2.0/18,10.0.3.0/19,192.168.0.0/23]"
+    EXTERNAL_NET: "!$HOME_NET"
+    
+# Step 4: specify rule files
+default-rule-path: .
+rule-files:
+  - suricata.rules
+
+# Step 5: configure logging outputs
+outputs:
+  - fast:
+      enabled: yes
+      filename: fast.log
+      append: yes
