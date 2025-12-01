@@ -293,6 +293,8 @@ def main():
     # Interface rISP2-rEDG connects to rEDG
     rISP2.setIP('190.0.1.2/30', intf='rISP2-rEDG')
     rISP2.applyRoutingRIPv2(networks=['190.0.1.0/30', '172.16.100.0/30'])
+    # Add a static default route to ensure rISP2 knows how to reach the internet via rISP1
+    rISP2.applyStaticRoute(destination='0.0.0.0/0', via='172.16.100.1')
 
     # rEDG ("Edge Router") Configuration
     rEDG = net.get('rEDG')
@@ -316,7 +318,7 @@ def main():
     # Route traffic for internal networks over the tunnel from rREM
     rREM.applyStaticRoute(destination='10.0.0.0/8', via='172.16.210.1', interface='rREM-rEDG')
     # Route traffic for the remote office over the tunnel from rEDG
-    rEDG.applyStaticRoute(destination='192.168.1.0/24', via='172.16.210.1', interface='rEDG-rREM')
+    rEDG.applyStaticRoute(destination='192.168.0.0/23', via='172.16.210.2', interface='rEDG-rREM')
 
     # rINT ("Inside Router") Configuration
     rINT = net.get('rINT')
