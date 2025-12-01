@@ -202,6 +202,38 @@ def setup_switch_mirroring(switch_node, mirror_to_port):
     switch_node.cmd(mirror_cmd)
     print(f'*   Port mirroring configured on {switch_name} to port {mirror_to_port}\n')
 
+def probando_conexiones(net):
+    print('*** Realizando pruebas de conectividad...\n')
+    
+    # Get hosts
+    h1ST = net.get('h1ST')
+    h2ND = net.get('h2ND')
+    hFTPALL = net.get('hFTPALL')
+    hFTPVP = net.get('hFTPVP')
+    hVP = net.get('hVP')
+    hEXTERNAL = net.get('hEXTERNAL')
+    hREM = net.get('hREM')
+
+    tests = {
+        "h1ST -> h2ND (Debe funcionar)": (h1ST, f'ping -c 1 {h2ND.IP()}'),
+        "h1ST -> hFTPALL (Debe funcionar)": (h1ST, f'ping -c 1 {hFTPALL.IP()}'),
+        "h1ST -> hFTPVP (Debe fallar por firewall)": (h1ST, f'ping -c 1 {hFTPVP.IP()}'),
+        "hVP -> hEXTERNAL (Debe funcionar)": (hVP, f'ping -c 1 {hEXTERNAL.IP()}'),
+        "h2ND -> hEXTERNAL (Debe fallar por firewall)": (h2ND, f'ping -c 1 {hEXTERNAL.IP()}'),
+        "hVP -> hFTPVP (Debe funcionar)": (hVP, f'ping -c 1 {hFTPVP.IP()}'),
+        "h2ND -> hREM (Debe funcionar)": (h2ND, f'ping -c 1 {hREM.IP()}')
+    }
+
+    for description, (host, command) in tests.items():
+        print(f'--- Prueba: {description} ---')
+        result = host.cmd(command)
+        print(result)
+        # Check for packet loss to give a simple pass/fail
+        if '100% packet loss' in result or 'unreachable' in result or '100.0% packet loss' in result:
+            print('Resultado: FALLO\n')
+        else:
+            print('Resultado: ÉXITO\n')
+
 def main():
     net = Mininet(topo=MyTopo(),
                   controller=None,
@@ -404,6 +436,9 @@ def main():
     # Suricata will read the suricata.yml file and listen on both ids-eth0 and ids-eth1
     ids.cmd('suricata -c suricata.yml -s suricata.rules &')
     print('*** IDS configuration complete.\n')
+
+    # Run automated connectivity tests
+    probando_conexiones(net)
 
     CLI(net)
     net.stop()
