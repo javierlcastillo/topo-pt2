@@ -166,11 +166,9 @@ class Router(Node):
         # Allow routing protocol traffic (RIP) to be received
         self.cmd('iptables -A INPUT -p udp --dport 520 -j ACCEPT')
 
-        # Allow ICMP (ping) traffic to be forwarded for testing purposes
-        self.cmd('iptables -A FORWARD -p icmp -j ACCEPT')
-
         # Allow established and related connections
         self.cmd('iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT')
+        self.cmd('iptables -A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT')
         self.cmd('iptables -A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT')
 
     def applyRIPAuth(self, interface, key_id, password, keychain_name='rip_auth'):
@@ -220,27 +218,38 @@ def probando_conexiones(net):
         hEXTERNAL = net.get('hEXTERNAL')
         hREM = net.get('hREM')
 
+        # Define ports for services
+        FTP_PORT = '21'
+        PAYROLL_PORT = '80'
+
         tests = {
-            "h1ST -> h2ND (Debe funcionar)": (h1ST, f'ping -c 1 {h2ND.IP()}'),
-            "h1ST -> hFTPALL (Debe funcionar)": (h1ST, f'ping -c 1 {hFTPALL.IP()}'),
-            "h1ST -> hFTPVP (Debe fallar por firewall)": (h1ST, f'ping -c 1 {hFTPVP.IP()}'),
-            "hVP -> hEXTERNAL (Debe funcionar)": (hVP, f'ping -c 1 {hEXTERNAL.IP()}'),
-            "h2ND -> hEXTERNAL (Debe fallar por firewall)": (h2ND, f'ping -c 1 {hEXTERNAL.IP()}'),
-            "hVP -> hFTPVP (Debe funcionar)": (hVP, f'ping -c 1 {hFTPVP.IP()}'),
-            "h2ND -> hREM (Debe funcionar)": (h2ND, f'ping -c 1 {hREM.IP()}')
+            "h1ST -> h2ND (Ping) (Debe funcionar)": (h1ST, f'ping -c 1 {h2ND.IP()}', 'ping'),
+            "h1ST -> hFTPALL (FTP) (Debe funcionar)": (h1ST, f'nc -zv -w 1 {hFTPALL.IP()} {FTP_PORT}', 'nc'),
+            "h1ST -> hFTPVP (FTP) (Debe fallar por firewall)": (h1ST, f'nc -zv -w 1 {hFTPVP.IP()} {FTP_PORT}', 'nc'),
+            "hVP -> hEXTERNAL (Ping) (Debe funcionar)": (hVP, f'ping -c 1 {hEXTERNAL.IP()}', 'ping'),
+            "h2ND -> hEXTERNAL (Ping) (Debe fallar por firewall)": (h2ND, f'ping -c 1 {hEXTERNAL.IP()}', 'ping'),
+            "hVP -> hFTPVP (FTP) (Debe funcionar)": (hVP, f'nc -zv -w 1 {hFTPVP.IP()} {FTP_PORT}', 'nc'),
+            "h2ND -> hREM (Ping) (Debe funcionar)": (h2ND, f'ping -c 1 {hREM.IP()}', 'ping'),
+            "h1ST -> hPAYROLL (HTTP) (Debe funcionar)": (h1ST, f'nc -zv -w 1 {hPAYROLL.IP()} {PAYROLL_PORT}', 'nc')
         }
 
-        for description, (host, command) in tests.items():
+        for description, (host, command, cmd_type) in tests.items():
             f.write(f'--- Prueba: {description} ---\n')
             result = host.cmd(command)
             f.write(result)
             f.write('\n') # Add a newline for better formatting
             
-            # Check for packet loss to give a simple pass/fail
-            if '100% packet loss' in result or 'unreachable' in result or '100.0% packet loss' in result:
-                f.write('Resultado: FALLO\n\n')
-            else:
-                f.write('Resultado: ÉXITO\n\n')
+            # Check pass/fail based on command type
+            if cmd_type == 'ping':
+                if '100% packet loss' in result or 'unreachable' in result or '100.0% packet loss' in result:
+                    f.write('Resultado: FALLO\n\n')
+                else:
+                    f.write('Resultado: ÉXITO\n\n')
+            elif cmd_type == 'nc':
+                if 'succeeded!' in result or 'open' in result:
+                    f.write('Resultado: ÉXITO\n\n')
+                else:
+                    f.write('Resultado: FALLO\n\n')
     
     print(f'*** Pruebas completadas. Revisa el archivo {output_file} para ver los detalles.\n')
 
