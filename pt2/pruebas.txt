@@ -2,11 +2,11 @@
 
 --- Prueba: h1ST -> h2ND (Ping) (Debe funcionar) ---
 PING 10.0.2.10 (10.0.2.10) 56(84) bytes of data.
-64 bytes from 10.0.2.10: icmp_seq=1 ttl=64 time=0.380 ms
+64 bytes from 10.0.2.10: icmp_seq=1 ttl=64 time=0.482 ms
 
 --- 10.0.2.10 ping statistics ---
 1 packets transmitted, 1 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 0.380/0.380/0.380/0.000 ms
+rtt min/avg/max/mdev = 0.482/0.482/0.482/0.000 ms
 
 Resultado: ÉXITO
 
