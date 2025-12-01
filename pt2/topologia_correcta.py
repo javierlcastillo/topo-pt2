@@ -150,12 +150,13 @@ class Router(Node):
     
     def applyStaticRoute(self, destination, via, interface=None):
         """
-        Adds a static route using vtysh to be compatible with FRR.
+        Adds a static route using the ip route command.
         """
         if interface:
-            self.cmd(f'vtysh -c "conf t" -c "ip route {destination} {via} {interface}"')
+            self.cmd(f'ip route add {destination} via {via} dev {interface}')
         else:
-            self.cmd(f'vtysh -c "conf t" -c "ip route {destination} {via}"')
+            # Note: It's generally better to specify the output interface.
+            self.cmd(f'ip route add {destination} via {via}')
 
     def applyFirewall(self):
         # Flush existing rules and set default policies
