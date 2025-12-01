@@ -206,36 +206,43 @@ def setup_switch_mirroring(switch_node, mirror_to_port):
     print(f'*   Port mirroring configured on {switch_name} to port {mirror_to_port}\n')
 
 def probando_conexiones(net):
-    print('*** Realizando pruebas de conectividad...\n')
+    output_file = 'pruebas.txt'
+    print(f'*** Realizando pruebas de conectividad, guardando resultados en {output_file}...\n')
+    with open(output_file, 'w') as f:
+        f.write('*** Resultados de las pruebas de conectividad ***\n\n')
+        
+        # Get hosts
+        h1ST = net.get('h1ST')
+        h2ND = net.get('h2ND')
+        hFTPALL = net.get('hFTPALL')
+        hFTPVP = net.get('hFTPVP')
+        hVP = net.get('hVP')
+        hEXTERNAL = net.get('hEXTERNAL')
+        hREM = net.get('hREM')
+
+        tests = {
+            "h1ST -> h2ND (Debe funcionar)": (h1ST, f'ping -c 1 {h2ND.IP()}'),
+            "h1ST -> hFTPALL (Debe funcionar)": (h1ST, f'ping -c 1 {hFTPALL.IP()}'),
+            "h1ST -> hFTPVP (Debe fallar por firewall)": (h1ST, f'ping -c 1 {hFTPVP.IP()}'),
+            "hVP -> hEXTERNAL (Debe funcionar)": (hVP, f'ping -c 1 {hEXTERNAL.IP()}'),
+            "h2ND -> hEXTERNAL (Debe fallar por firewall)": (h2ND, f'ping -c 1 {hEXTERNAL.IP()}'),
+            "hVP -> hFTPVP (Debe funcionar)": (hVP, f'ping -c 1 {hFTPVP.IP()}'),
+            "h2ND -> hREM (Debe funcionar)": (h2ND, f'ping -c 1 {hREM.IP()}')
+        }
+
+        for description, (host, command) in tests.items():
+            f.write(f'--- Prueba: {description} ---\n')
+            result = host.cmd(command)
+            f.write(result)
+            f.write('\n') # Add a newline for better formatting
+            
+            # Check for packet loss to give a simple pass/fail
+            if '100% packet loss' in result or 'unreachable' in result or '100.0% packet loss' in result:
+                f.write('Resultado: FALLO\n\n')
+            else:
+                f.write('Resultado: ÉXITO\n\n')
     
-    # Get hosts
-    h1ST = net.get('h1ST')
-    h2ND = net.get('h2ND')
-    hFTPALL = net.get('hFTPALL')
-    hFTPVP = net.get('hFTPVP')
-    hVP = net.get('hVP')
-    hEXTERNAL = net.get('hEXTERNAL')
-    hREM = net.get('hREM')
-
-    tests = {
-        "h1ST -> h2ND (Debe funcionar)": (h1ST, f'ping -c 1 {h2ND.IP()}'),
-        "h1ST -> hFTPALL (Debe funcionar)": (h1ST, f'ping -c 1 {hFTPALL.IP()}'),
-        "h1ST -> hFTPVP (Debe fallar por firewall)": (h1ST, f'ping -c 1 {hFTPVP.IP()}'),
-        "hVP -> hEXTERNAL (Debe funcionar)": (hVP, f'ping -c 1 {hEXTERNAL.IP()}'),
-        "h2ND -> hEXTERNAL (Debe fallar por firewall)": (h2ND, f'ping -c 1 {hEXTERNAL.IP()}'),
-        "hVP -> hFTPVP (Debe funcionar)": (hVP, f'ping -c 1 {hFTPVP.IP()}'),
-        "h2ND -> hREM (Debe funcionar)": (h2ND, f'ping -c 1 {hREM.IP()}')
-    }
-
-    for description, (host, command) in tests.items():
-        print(f'--- Prueba: {description} ---')
-        result = host.cmd(command)
-        print(result)
-        # Check for packet loss to give a simple pass/fail
-        if '100% packet loss' in result or 'unreachable' in result or '100.0% packet loss' in result:
-            print('Resultado: FALLO\n')
-        else:
-            print('Resultado: ÉXITO\n')
+    print(f'*** Pruebas completadas. Revisa el archivo {output_file} para ver los detalles.\n')
 
 def main():
     net = Mininet(topo=MyTopo(),
