@@ -422,8 +422,9 @@ def main():
     # This must be configured on both ends of a link with the same credentials.
     # The only link with RIP running on both sides is rISP1 <-> rISP2.
     print('*** Configuring RIP MD5 authentication...\n')
-    rISP1.applyRIPAuth(interface='rISP1-rISP2', key_id='1', password='a_secure_password')
-    rISP2.applyRIPAuth(interface='rISP2-rISP1', key_id='1', password='a_secure_password')
+    # Temporarily commenting out MD5 auth to debug internet connectivity issues.
+    # rISP1.applyRIPAuth(interface='rISP1-rISP2', key_id='1', password='a_secure_password')
+    # rISP2.applyRIPAuth(interface='rISP2-rISP1', key_id='1', password='a_secure_password')
 
     # --- IDS Configuration ---
     print('*** Configuring IDS...\n')
