@@ -217,6 +217,7 @@ def probando_conexiones(net):
         hVP = net.get('hVP')
         hEXTERNAL = net.get('hEXTERNAL')
         hREM = net.get('hREM')
+        hPAYROLL = net.get('hPAYROLL')
 
         # Define ports for services
         FTP_PORT = '21'
