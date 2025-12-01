@@ -131,6 +131,7 @@ class Router(Node):
         self.cmd(f'vtysh -c "configure terminal" '
                  f'-c "router rip" '
                  f'-c "version 2" '
+                 f'-c "redistribute connected" '
                  f'-c "end"')
         for network in networks:
             self.cmd(f'vtysh --vty_socket /tmp/{self.name} '
@@ -231,7 +232,9 @@ def probando_conexiones(net):
             "h2ND -> hEXTERNAL (Ping) (Debe fallar por firewall)": (h2ND, f'ping -c 1 {hEXTERNAL.IP()}', 'ping'),
             "hVP -> hFTPVP (FTP) (Debe funcionar)": (hVP, f'nc -zv -w 1 {hFTPVP.IP()} {FTP_PORT}', 'nc'),
             "h2ND -> hREM (Ping) (Debe funcionar)": (h2ND, f'ping -c 1 {hREM.IP()}', 'ping'),
-            "h1ST -> hPAYROLL (HTTP) (Debe funcionar)": (h1ST, f'nc -zv -w 1 {hPAYROLL.IP()} {PAYROLL_PORT}', 'nc')
+            "h1ST -> hPAYROLL (HTTP) (Debe funcionar)": (h1ST, f'nc -zv -w 1 {hPAYROLL.IP()} {PAYROLL_PORT}', 'nc'),
+            "hREM -> hFTPALL (FTP) (Debe funcionar)": (hREM, f'nc -zv -w 1 {hFTPALL.IP()} {FTP_PORT}', 'nc'),
+            "hREM -> hFTPVP (FTP) (Debe fallar por firewall)": (hREM, f'nc -zv -w 1 {hFTPVP.IP()} {FTP_PORT}', 'nc')
         }
 
         for description, (host, command, cmd_type) in tests.items():
@@ -360,13 +363,17 @@ def main():
     hFTPVP = net.get('hFTPVP')
     hFTPVP.setIP('172.16.50.10/22', intf='hFTPVP-sCEN')
     hFTPVP.setDefaultRoute('via 172.16.50.254')
-    # Start a simple web server for testing connectivity on port 80
-    hFTPVP.cmd('python3 -m http.server 80 &')
+    # Start a simple Python FTP server for testing connectivity on port 21
+    # Note: pyftpdlib may need to be installed (pip install pyftpdlib)
+    hFTPVP.cmd('python3 -m pyftpdlib -p 21 &')
 
     # hFTPALL (FTP server for all employees)
     hFTPALL = net.get('hFTPALL')
     hFTPALL.setIP('172.16.50.11/22', intf='hFTPALL-sCEN')
     hFTPALL.setDefaultRoute('via 172.16.50.254')
+    # Start a simple Python FTP server for testing connectivity on port 21
+    # Note: pyftpdlib may need to be installed (pip install pyftpdlib)
+    hFTPALL.cmd('python3 -m pyftpdlib -p 21 &')
     hFTPVP.cmd('python3 -m http.server 80 &')
 
     # hINTRANET (Intranet server)
@@ -379,6 +386,8 @@ def main():
     hPAYROLL = net.get('hPAYROLL')
     hPAYROLL.setIP('172.16.50.13/22', intf='hPAYROLL-sCEN')
     hPAYROLL.setDefaultRoute('via 172.16.50.254')
+    # Start a simple web server for testing connectivity on port 80
+    hPAYROLL.cmd('python3 -m http.server 80 &')
     hFTPVP.cmd('python3 -m http.server 80 &')
 
     # hEXTERNAL ("Internet" Host)
@@ -425,8 +434,9 @@ def main():
     rINT.cmd('iptables -A FORWARD -s 10.0.0.0/8 -o rINT-sCEN -j ACCEPT')
 
     # --- Specific Firewall Rules on rREM ---
-    # Allow FORWARD traffic from the remote office LAN (192.168.0.0/23) to the main office LAN (10.0.0.0/8) via the GRE tunnel.
+    # Allow FORWARD traffic from the remote office LAN to the main office LANs (10.x and DMZ) via the GRE tunnel.
     rREM.cmd('iptables -A FORWARD -s 192.168.0.0/23 -d 10.0.0.0/8 -o rREM-rEDG -j ACCEPT')
+    rREM.cmd('iptables -A FORWARD -s 192.168.0.0/23 -d 172.16.0.0/12 -o rREM-rEDG -j ACCEPT')
 
     # --- RIP MD5 Authentication ---
     # This must be configured on both ends of a link with the same credentials.
