@@ -166,6 +166,9 @@ class Router(Node):
         # Allow routing protocol traffic (RIP) to be received
         self.cmd('iptables -A INPUT -p udp --dport 520 -j ACCEPT')
 
+        # Allow ICMP (ping) traffic to be forwarded for testing purposes
+        self.cmd('iptables -A FORWARD -p icmp -j ACCEPT')
+
         # Allow established and related connections
         self.cmd('iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT')
         self.cmd('iptables -A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT')
