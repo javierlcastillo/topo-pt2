@@ -408,47 +408,43 @@ def main():
     rREM.applyFirewall()
 
     # --- Specific Firewall Rules on rEDG ---
-    
-    # aqui empezo el comment
 
-    # # Rule for VP FTP server
-    # rEDG.firewallRules(source='10.0.1.0/27', destination='172.16.50.10', port='21', protocol='tcp')
-    # # Rule for Vice Presidents' Network
-    # rEDG.firewallRules(source='10.0.1.0/27', destination='172.16.50.11', port='21', protocol='tcp')
-    # # Rule for 2nd Floor Network
-    # rEDG.firewallRules(source='10.0.2.0/18', destination='172.16.50.11', port='21', protocol='tcp')
-    # # Rule for 1st Floor Network
-    # rEDG.firewallRules(source='10.0.3.0/19', destination='172.16.50.11', port='21', protocol='tcp')
-    # # Rule for Remote Office Network (Note: 192.168.1.1/23 is the range 192.168.0.0-192.168.1.255)
-    # rEDG.firewallRules(source='192.168.0.0/23', destination='172.16.50.11', port='21', protocol='tcp')
+    # Rule for VP FTP server
+    rEDG.firewallRules(source='10.0.1.0/27', destination='172.16.50.10', port='21', protocol='tcp')
+    # Rule for Vice Presidents' Network
+    rEDG.firewallRules(source='10.0.1.0/27', destination='172.16.50.11', port='21', protocol='tcp')
+    # Rule for 2nd Floor Network
+    rEDG.firewallRules(source='10.0.2.0/18', destination='172.16.50.11', port='21', protocol='tcp')
+    # Rule for 1st Floor Network
+    rEDG.firewallRules(source='10.0.3.0/19', destination='172.16.50.11', port='21', protocol='tcp')
+    # Rule for Remote Office Network (Note: 192.168.1.1/23 is the range 192.168.0.0-192.168.1.255)
+    rEDG.firewallRules(source='192.168.0.0/23', destination='172.16.50.11', port='21', protocol='tcp')
 
-    # # Requirement: "Restrict that payroll system to be accessible only by the accountancy department... and the finance vice president"
-    # # We will assume h1ST is the accounting host and hFVP is the finance VP host.
-    # # We will use port 80/tcp as the service port for the payroll system.
-    # rEDG.firewallRules(source='10.0.3.10/32', destination='172.16.50.13', port='80', protocol='tcp')
-    # rEDG.firewallRules(source='10.0.1.11/32', destination='172.16.50.13', port='80', protocol='tcp')
+    # Requirement: "Restrict that payroll system to be accessible only by the accountancy department... and the finance vice president"
+    # We will assume h1ST is the accounting host and hFVP is the finance VP host.
+    # We will use port 80/tcp as the service port for the payroll system.
+    rEDG.firewallRules(source='10.0.3.10/32', destination='172.16.50.13', port='80', protocol='tcp')
+    rEDG.firewallRules(source='10.0.1.11/32', destination='172.16.50.13', port='80', protocol='tcp')
 
-    # # Requirement: "Only vice presidents should have access to the internet"
-    # # Allow FORWARD traffic from the VP network (10.0.1.0/27) to the internet (outbound interface).
-    # rEDG.cmd('iptables -A FORWARD -s 10.0.1.0/27 -o rEDG-rISP2 -j ACCEPT')
+    # Requirement: "Only vice presidents should have access to the internet"
+    # Allow FORWARD traffic from the VP network (10.0.1.0/27) to the internet (outbound interface).
+    rEDG.cmd('iptables -A FORWARD -s 10.0.1.0/27 -o rEDG-rISP2 -j ACCEPT')
 
-    # # Allow FORWARD traffic from the main office LAN (10.0.0.0/8) to the remote office LAN (192.168.0.0/23) via the GRE tunnel.
-    # rEDG.cmd('iptables -A FORWARD -s 10.0.0.0/8 -d 192.168.0.0/23 -o rEDG-rREM -j ACCEPT')
-    # # Add explicit rule for the return traffic from the remote office, as conntrack can be tricky with tunnels.
-    # rEDG.cmd('iptables -A FORWARD -s 192.168.0.0/23 -d 10.0.0.0/8 -i rEDG-rREM -j ACCEPT')
+    # Allow FORWARD traffic from the main office LAN (10.0.0.0/8) to the remote office LAN (192.168.0.0/23) via the GRE tunnel.
+    rEDG.cmd('iptables -A FORWARD -s 10.0.0.0/8 -d 192.168.0.0/23 -o rEDG-rREM -j ACCEPT')
+    # Add explicit rule for the return traffic from the remote office, as conntrack can be tricky with tunnels.
+    rEDG.cmd('iptables -A FORWARD -s 192.168.0.0/23 -d 10.0.0.0/8 -i rEDG-rREM -j ACCEPT')
 
-    # # --- Specific Firewall Rules on rINT ---
-    # # Allow internal networks to communicate with each other.
-    # rINT.cmd('iptables -A FORWARD -s 10.0.0.0/8 -d 10.0.0.0/8 -j ACCEPT')
-    # # Allow internal networks to forward traffic towards the edge router.
-    # rINT.cmd('iptables -A FORWARD -s 10.0.0.0/8 -o rINT-sCEN -j ACCEPT')
+    # --- Specific Firewall Rules on rINT ---
+    # Allow internal networks to communicate with each other.
+    rINT.cmd('iptables -A FORWARD -s 10.0.0.0/8 -d 10.0.0.0/8 -j ACCEPT')
+    # Allow internal networks to forward traffic towards the edge router.
+    rINT.cmd('iptables -A FORWARD -s 10.0.0.0/8 -o rINT-sCEN -j ACCEPT')
 
-    # # --- Specific Firewall Rules on rREM ---
-    # # Allow FORWARD traffic from the remote office LAN to the main office LANs (10.x and DMZ) via the GRE tunnel.
-    # rREM.cmd('iptables -A FORWARD -s 192.168.0.0/23 -d 10.0.0.0/8 -o rREM-rEDG -j ACCEPT')
-    # rREM.cmd('iptables -A FORWARD -s 192.168.0.0/23 -d 172.16.0.0/12 -o rREM-rEDG -j ACCEPT')
-
-    # aqui termino
+    # --- Specific Firewall Rules on rREM ---
+    # Allow FORWARD traffic from the remote office LAN to the main office LANs (10.x and DMZ) via the GRE tunnel.
+    rREM.cmd('iptables -A FORWARD -s 192.168.0.0/23 -d 10.0.0.0/8 -o rREM-rEDG -j ACCEPT')
+    rREM.cmd('iptables -A FORWARD -s 192.168.0.0/23 -d 172.16.0.0/12 -o rREM-rEDG -j ACCEPT')
 
     # --- RIP MD5 Authentication ---
     # This must be configured on both ends of a link with the same credentials.
