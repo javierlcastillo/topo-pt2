@@ -149,10 +149,13 @@ class Router(Node):
         self.cmd(f'iptables -t nat -A POSTROUTING -o {outside_interface} -s {source_network} -m iprange --dst-range 0.0.0.0-126.255.255.255 -j MASQUERADE')
     
     def applyStaticRoute(self, destination, via, interface=None):
+        """
+        Adds a static route using vtysh to be compatible with FRR.
+        """
         if interface:
-            self.cmd(f'ip route add {destination} via {via} dev {interface}')
+            self.cmd(f'vtysh -c "conf t" -c "ip route {destination} {via} {interface}"')
         else:
-            self.cmd(f'ip route add {destination} via {via} dev {self.name}')
+            self.cmd(f'vtysh -c "conf t" -c "ip route {destination} {via}"')
 
     def applyFirewall(self):
         # Flush existing rules and set default policies
@@ -294,7 +297,7 @@ def main():
     rISP2.setIP('190.0.1.2/30', intf='rISP2-rEDG')
     rISP2.applyRoutingRIPv2(networks=['190.0.1.0/30', '172.16.100.0/30'])
     # Add a static default route to ensure rISP2 knows how to reach the internet via rISP1
-    rISP2.applyStaticRoute(destination='0.0.0.0/0', via='172.16.100.1')
+    rISP2.applyStaticRoute(destination='0.0.0.0/0', via='172.16.100.1', interface='rISP2-rISP1')
 
     # rEDG ("Edge Router") Configuration
     rEDG = net.get('rEDG')
@@ -367,7 +370,7 @@ def main():
     hFTPVP.setDefaultRoute('via 172.16.50.254')
     # Start a simple Python FTP server for testing connectivity on port 21
     # Note: pyftpdlib may need to be installed (pip install pyftpdlib)
-    hFTPVP.cmd('python3 -m pyftpdlib -p 21 &')
+    hFTPVP.cmd('python3 -m pyftpdlib -p 21 > /tmp/ftpvp.log 2>&1 &')
 
     # hFTPALL (FTP server for all employees)
     hFTPALL = net.get('hFTPALL')
@@ -375,7 +378,7 @@ def main():
     hFTPALL.setDefaultRoute('via 172.16.50.254')
     # Start a simple Python FTP server for testing connectivity on port 21
     # Note: pyftpdlib may need to be installed (pip install pyftpdlib)
-    hFTPALL.cmd('python3 -m pyftpdlib -p 21 &')
+    hFTPALL.cmd('python3 -m pyftpdlib -p 21 > /tmp/ftpall.log 2>&1 &')
     hFTPVP.cmd('python3 -m http.server 80 &')
 
     # hINTRANET (Intranet server)
@@ -428,6 +431,8 @@ def main():
 
     # Allow FORWARD traffic from the main office LAN (10.0.0.0/8) to the remote office LAN (192.168.0.0/23) via the GRE tunnel.
     rEDG.cmd('iptables -A FORWARD -s 10.0.0.0/8 -d 192.168.0.0/23 -o rEDG-rREM -j ACCEPT')
+    # Add explicit rule for the return traffic from the remote office, as conntrack can be tricky with tunnels.
+    rEDG.cmd('iptables -A FORWARD -s 192.168.0.0/23 -d 10.0.0.0/8 -i rEDG-rREM -j ACCEPT')
 
     # --- Specific Firewall Rules on rINT ---
     # Allow internal networks to communicate with each other.
