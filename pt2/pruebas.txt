@@ -2,19 +2,19 @@
 
 --- Prueba: h1ST -> h2ND (Ping) (Debe funcionar) ---
 PING 10.0.2.10 (10.0.2.10) 56(84) bytes of data.
-64 bytes from 10.0.2.10: icmp_seq=1 ttl=64 time=0.482 ms
+64 bytes from 10.0.2.10: icmp_seq=1 ttl=64 time=0.635 ms
 
 --- 10.0.2.10 ping statistics ---
 1 packets transmitted, 1 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 0.482/0.482/0.482/0.000 ms
+rtt min/avg/max/mdev = 0.635/0.635/0.635/0.000 ms
 
 Resultado: ÉXITO
 
 --- Prueba: h1ST -> hFTPALL (FTP) (Debe funcionar) ---
 172.16.50.11: inverse host lookup failed: Host name lookup failure
-(UNKNOWN) [172.16.50.11] 21 (ftp) : Connection refused
+(UNKNOWN) [172.16.50.11] 21 (ftp) open
 
-Resultado: FALLO
+Resultado: ÉXITO
 
 --- Prueba: h1ST -> hFTPVP (FTP) (Debe fallar por firewall) ---
 172.16.50.10: inverse host lookup failed: Host name lookup failure
@@ -24,10 +24,9 @@ Resultado: FALLO
 
 --- Prueba: hVP -> hEXTERNAL (Ping) (Debe funcionar) ---
 PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.
-From 190.0.1.2 icmp_seq=1 Destination Net Unreachable
 
 --- 1.1.1.1 ping statistics ---
-1 packets transmitted, 0 received, +1 errors, 100% packet loss, time 0ms
+1 packets transmitted, 0 received, 100% packet loss, time 0ms
 
 
 Resultado: FALLO
@@ -43,9 +42,9 @@ Resultado: FALLO
 
 --- Prueba: hVP -> hFTPVP (FTP) (Debe funcionar) ---
 172.16.50.10: inverse host lookup failed: Host name lookup failure
-(UNKNOWN) [172.16.50.10] 21 (ftp) : Connection refused
+(UNKNOWN) [172.16.50.10] 21 (ftp) open
 
-Resultado: FALLO
+Resultado: ÉXITO
 
 --- Prueba: h2ND -> hREM (Ping) (Debe funcionar) ---
 PING 192.168.1.10 (192.168.1.10) 56(84) bytes of data.
