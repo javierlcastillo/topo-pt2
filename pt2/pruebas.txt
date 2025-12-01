@@ -1,36 +1,28 @@
 *** Resultados de las pruebas de conectividad ***
 
---- Prueba: h1ST -> h2ND (Debe funcionar) ---
+--- Prueba: h1ST -> h2ND (Ping) (Debe funcionar) ---
 PING 10.0.2.10 (10.0.2.10) 56(84) bytes of data.
-64 bytes from 10.0.2.10: icmp_seq=1 ttl=64 time=0.574 ms
+64 bytes from 10.0.2.10: icmp_seq=1 ttl=64 time=0.480 ms
 
 --- 10.0.2.10 ping statistics ---
 1 packets transmitted, 1 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 0.574/0.574/0.574/0.000 ms
+rtt min/avg/max/mdev = 0.480/0.480/0.480/0.000 ms
 
 Resultado: ÉXITO
 
---- Prueba: h1ST -> hFTPALL (Debe funcionar) ---
-PING 172.16.50.11 (172.16.50.11) 56(84) bytes of data.
-64 bytes from 172.16.50.11: icmp_seq=1 ttl=62 time=0.835 ms
+--- Prueba: h1ST -> hFTPALL (FTP) (Debe funcionar) ---
+172.16.50.11: inverse host lookup failed: Host name lookup failure
+(UNKNOWN) [172.16.50.11] 21 (ftp) : Connection refused
 
---- 172.16.50.11 ping statistics ---
-1 packets transmitted, 1 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 0.835/0.835/0.835/0.000 ms
+Resultado: FALLO
 
-Resultado: ÉXITO
+--- Prueba: h1ST -> hFTPVP (FTP) (Debe fallar por firewall) ---
+172.16.50.10: inverse host lookup failed: Host name lookup failure
+(UNKNOWN) [172.16.50.10] 21 (ftp) : Connection timed out
 
---- Prueba: h1ST -> hFTPVP (Debe fallar por firewall) ---
-PING 172.16.50.10 (172.16.50.10) 56(84) bytes of data.
-64 bytes from 172.16.50.10: icmp_seq=1 ttl=62 time=0.430 ms
+Resultado: FALLO
 
---- 172.16.50.10 ping statistics ---
-1 packets transmitted, 1 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 0.430/0.430/0.430/0.000 ms
-
-Resultado: ÉXITO
-
---- Prueba: hVP -> hEXTERNAL (Debe funcionar) ---
+--- Prueba: hVP -> hEXTERNAL (Ping) (Debe funcionar) ---
 PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.
 From 190.0.1.2 icmp_seq=1 Destination Net Unreachable
 
@@ -40,7 +32,7 @@ From 190.0.1.2 icmp_seq=1 Destination Net Unreachable
 
 Resultado: FALLO
 
---- Prueba: h2ND -> hEXTERNAL (Debe fallar por firewall) ---
+--- Prueba: h2ND -> hEXTERNAL (Ping) (Debe fallar por firewall) ---
 PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.
 
 --- 1.1.1.1 ping statistics ---
@@ -49,22 +41,24 @@ PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.
 
 Resultado: FALLO
 
---- Prueba: hVP -> hFTPVP (Debe funcionar) ---
-PING 172.16.50.10 (172.16.50.10) 56(84) bytes of data.
-64 bytes from 172.16.50.10: icmp_seq=1 ttl=62 time=0.206 ms
+--- Prueba: hVP -> hFTPVP (FTP) (Debe funcionar) ---
+172.16.50.10: inverse host lookup failed: Host name lookup failure
+(UNKNOWN) [172.16.50.10] 21 (ftp) : Connection refused
 
---- 172.16.50.10 ping statistics ---
-1 packets transmitted, 1 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 0.206/0.206/0.206/0.000 ms
+Resultado: FALLO
 
-Resultado: ÉXITO
-
---- Prueba: h2ND -> hREM (Debe funcionar) ---
+--- Prueba: h2ND -> hREM (Ping) (Debe funcionar) ---
 PING 192.168.1.10 (192.168.1.10) 56(84) bytes of data.
 
 --- 192.168.1.10 ping statistics ---
 1 packets transmitted, 0 received, 100% packet loss, time 0ms
 
+
+Resultado: FALLO
+
+--- Prueba: h1ST -> hPAYROLL (HTTP) (Debe funcionar) ---
+172.16.50.13: inverse host lookup failed: Host name lookup failure
+(UNKNOWN) [172.16.50.13] 80 (http) : Connection refused
 
 Resultado: FALLO
 
