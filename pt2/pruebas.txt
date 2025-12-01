@@ -2,11 +2,11 @@
 
 --- Prueba: h1ST -> h2ND (Ping) (Debe funcionar) ---
 PING 10.0.2.10 (10.0.2.10) 56(84) bytes of data.
-64 bytes from 10.0.2.10: icmp_seq=1 ttl=64 time=0.480 ms
+64 bytes from 10.0.2.10: icmp_seq=1 ttl=64 time=0.380 ms
 
 --- 10.0.2.10 ping statistics ---
 1 packets transmitted, 1 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 0.480/0.480/0.480/0.000 ms
+rtt min/avg/max/mdev = 0.380/0.380/0.380/0.000 ms
 
 Resultado: ÉXITO
 
@@ -58,7 +58,19 @@ Resultado: FALLO
 
 --- Prueba: h1ST -> hPAYROLL (HTTP) (Debe funcionar) ---
 172.16.50.13: inverse host lookup failed: Host name lookup failure
-(UNKNOWN) [172.16.50.13] 80 (http) : Connection refused
+(UNKNOWN) [172.16.50.13] 80 (http) open
+
+Resultado: ÉXITO
+
+--- Prueba: hREM -> hFTPALL (FTP) (Debe funcionar) ---
+172.16.50.11: inverse host lookup failed: Host name lookup failure
+(UNKNOWN) [172.16.50.11] 21 (ftp) : Connection timed out
+
+Resultado: FALLO
+
+--- Prueba: hREM -> hFTPVP (FTP) (Debe fallar por firewall) ---
+172.16.50.10: inverse host lookup failed: Host name lookup failure
+(UNKNOWN) [172.16.50.10] 21 (ftp) : Connection timed out
 
 Resultado: FALLO
 
