@@ -261,6 +261,57 @@ def probando_conexiones(net):
     
     print(f'*** Pruebas completadas. Revisa el archivo {output_file} para ver los detalles.\n')
 
+
+def apply_dai_rules(net):
+    """
+    Applies basic DAI rules to all switches based on static IP-MAC mappings.
+    This is based on the simple whitelist/blacklist model provided in the guide.
+    """
+    print('*** Applying DAI (Dynamic ARP Inspection) rules...\n')
+
+    # This mapping defines which endpoints (hosts or router interfaces)
+    # should have their ARP packets allowed by which switches.
+    # For aggregation switches, we must include downstream endpoints.
+    switch_map = {
+        'sREM': [('hREM', None), ('rREM', 'rREM-sREM')],
+        'sVP': [('hVP', None), ('hFVP', None)],
+        's2ND': [('h2ND', None)],
+        's1ST': [('h1ST', None)],
+        'sCEN': [('hFTPVP', None), ('hFTPALL', None), ('hINTRANET', None), ('hPAYROLL', None),
+                    ('rEDG', 'rEDG-sCEN-nDMZ'), ('rEDG', 'rEDG-sCEN-rINT'),
+                    ('rINT', 'rINT-sCEN')],
+        # sINT is an aggregation switch. It must allow ARP from all hosts on the floors
+        # it connects to, plus the router interfaces it serves directly.
+        'sINT': [('hVP', None), ('hFVP', None), ('h2ND', None), ('h1ST', None),
+                    ('rINT', 'rINT-sINT-nVP'), ('rINT', 'rINT-sINT-n2ND'),
+                    ('rINT', 'rINT-sINT-n1ST')]
+    }
+
+    switches_for_dai = ['sREM', 'sCEN', 'sINT', 'sVP', 's2ND', 's1ST']
+
+    for switch_name in switches_for_dai:
+        switch = net.get(switch_name)
+        print(f'*   Configuring switch {switch_name}...')
+
+        # Add the default drop rule for ARP first
+        switch.cmd(f'ovs-ofctl add-flow {switch_name} priority=10,dl_type=0x0806,actions=drop')
+        print(f'     - Adding default ARP drop rule.')
+
+        # Add allow rules for each endpoint associated with this switch
+        if switch_name in switch_map:
+            for node_name, intf_name in switch_map[switch_name]:
+                node = net.get(node_name)
+                mac = node.MAC(intf=intf_name) if intf_name else node.MAC()
+                ip = node.IP(intf=intf_name) if intf_name else node.IP()
+                
+                if ip and mac:
+                    ip_address_only = ip.split('/')[0]
+                    print(f'     - Adding allow rule for {node_name} ({ip_address_only} -> {mac})')
+                    switch.cmd(f'ovs-ofctl add-flow {switch_name} "priority=100,dl_type=0x0806,nw_src={ip_address_only},dl_src={mac},actions=normal"')
+    
+    print('*** DAI rules applied.\n')
+
+
 def main():
     net = Mininet(topo=MyTopo(),
                   controller=None,
@@ -475,6 +526,9 @@ def main():
     # Suricata will read the suricata.yml file and listen on both ids-eth0 and ids-eth1
     ids.cmd('suricata -c suricata.yml -s suricata.rules &')
     print('*** IDS configuration complete.\n')
+
+    # --- DAI Configuration ---
+    apply_dai_rules(net)
 
     # Run automated connectivity tests
     probando_conexiones(net)
