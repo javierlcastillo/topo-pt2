@@ -4,6 +4,7 @@ from mininet.node import Node
 from mininet.node import OVSSwitch
 from mininet.link import TCLink
 from mininet.cli import CLI
+import time
 
 class MyTopo(Topo):
     def build(self):
@@ -220,9 +221,13 @@ def probando_conexiones(net):
         hFTPALL = net.get('hFTPALL')
         hFTPVP = net.get('hFTPVP')
         hVP = net.get('hVP')
+        hFVP = net.get('hFVP')
         hEXTERNAL = net.get('hEXTERNAL')
         hREM = net.get('hREM')
         hPAYROLL = net.get('hPAYROLL')
+        ids = net.get('ids')
+        rINT = net.get('rINT')
+
 
         # Define ports for services
         FTP_PORT = '21'
@@ -258,8 +263,98 @@ def probando_conexiones(net):
                     f.write('Resultado: ÉXITO\n\n')
                 else:
                     f.write('Resultado: FALLO\n\n')
-    
+        
+        # --- ARP Spoofing Test ---
+        f.write('--- Prueba: ARP Spoofing (hVP -> hFVP impersonando rINT) (Debe fallar por DAI) ---\n')
+        print('*   Ejecutando prueba de ARP Spoofing...')
+        
+        # Clear Suricata log file on the IDS
+        ids.cmd('echo "" > /var/log/suricata/fast.log')
+        
+        # Define attacker, target, and impersonated node IPs
+        attacker_ip = hVP.IP()
+        target_ip = hFVP.IP()
+        impersonated_ip = rINT.IP(intf='rINT-sINT-nVP').split('/')[0]
+        
+        # Start arpspoof in the background
+        # Usage: arpspoof -i [interface] -t [target_ip] [impersonated_ip]
+        print(f'    - hVP ({attacker_ip}) iniciando ataque a hFVP ({target_ip}) impersonando a rINT ({impersonated_ip})')
+        hVP.cmd(f'arpspoof -i hVP-sVP -t {target_ip} {impersonated_ip} &')
+        
+        # Wait for the attack to run for a few seconds
+        time.sleep(4)
+        
+        # Stop the arpspoof process
+        hVP.cmd('pkill arpspoof')
+        print('    - Ataque detenido.')
+        
+        # Check the suricata logs for ARP alerts
+        log_content = ids.cmd('cat /var/log/suricata/fast.log')
+        f.write('Salida del log de Suricata (fast.log):\n')
+        f.write(log_content if log_content else '(vacio)\n\n')
+        
+        # The test is a SUCCESS if no ARP alerts are found, because it means DAI dropped the packets.
+        if "ARP Packet Detected" not in log_content:
+            f.write('Analisis: No se detectaron paquetes ARP maliciosos en el IDS.\n')
+            f.write('Resultado: ÉXITO (El ataque fue prevenido por DAI)\n\n')
+            print('    - Prueba de ARP Spoofing: ÉXITO (Ataque bloqueado)')
+        else:
+            f.write('Analisis: Se detectaron paquetes ARP maliciosos en el IDS.\n')
+            f.write('Resultado: FALLO (El ataque NO fue prevenido por DAI)\n\n')
+            print('    - Prueba de ARP Spoofing: FALLO (Ataque NO bloqueado)')
+
     print(f'*** Pruebas completadas. Revisa el archivo {output_file} para ver los detalles.\n')
+
+
+def apply_dai_rules(net):
+    """
+    Applies basic DAI rules to all switches based on static IP-MAC mappings.
+    This is based on the simple whitelist/blacklist model provided in the guide.
+    """
+    print('*** Applying DAI (Dynamic ARP Inspection) rules...\n')
+
+    # This mapping defines which endpoints (hosts or router interfaces)
+    # should have their ARP packets allowed by which switches.
+    # For aggregation switches, we must include downstream endpoints.
+    switch_map = {
+        'sREM': [('hREM', None), ('rREM', 'rREM-sREM')],
+        'sVP': [('hVP', None), ('hFVP', None)],
+        's2ND': [('h2ND', None)],
+        's1ST': [('h1ST', None)],
+        'sCEN': [('hFTPVP', None), ('hFTPALL', None), ('hINTRANET', None), ('hPAYROLL', None),
+                    ('rEDG', 'rEDG-sCEN-nDMZ'), ('rEDG', 'rEDG-sCEN-rINT'),
+                    ('rINT', 'rINT-sCEN')],
+        # sINT is an aggregation switch. It must allow ARP from all hosts on the floors
+        # it connects to, plus the router interfaces it serves directly.
+        'sINT': [('hVP', None), ('hFVP', None), ('h2ND', None), ('h1ST', None),
+                    ('rINT', 'rINT-sINT-nVP'), ('rINT', 'rINT-sINT-n2ND'),
+                    ('rINT', 'rINT-sINT-n1ST')]
+    }
+
+    switches_for_dai = ['sREM', 'sCEN', 'sINT', 'sVP', 's2ND', 's1ST']
+
+    for switch_name in switches_for_dai:
+        switch = net.get(switch_name)
+        print(f'*   Configuring switch {switch_name}...')
+
+        # Add the default drop rule for ARP first
+        switch.cmd(f'ovs-ofctl add-flow {switch_name} priority=10,dl_type=0x0806,actions=drop')
+        print(f'     - Adding default ARP drop rule.')
+
+        # Add allow rules for each endpoint associated with this switch
+        if switch_name in switch_map:
+            for node_name, intf_name in switch_map[switch_name]:
+                node = net.get(node_name)
+                mac = node.MAC(intf=intf_name) if intf_name else node.MAC()
+                ip = node.IP(intf=intf_name) if intf_name else node.IP()
+                
+                if ip and mac:
+                    ip_address_only = ip.split('/')[0]
+                    print(f'     - Adding allow rule for {node_name} ({ip_address_only} -> {mac})')
+                    switch.cmd(f'ovs-ofctl add-flow {switch_name} "priority=100,dl_type=0x0806,nw_src={ip_address_only},dl_src={mac},actions=normal"')
+    
+    print('*** DAI rules applied.\n')
+
 
 def main():
     net = Mininet(topo=MyTopo(),
@@ -475,6 +570,9 @@ def main():
     # Suricata will read the suricata.yml file and listen on both ids-eth0 and ids-eth1
     ids.cmd('suricata -c suricata.yml -s suricata.rules &')
     print('*** IDS configuration complete.\n')
+
+    # --- DAI Configuration ---
+    apply_dai_rules(net)
 
     # Run automated connectivity tests
     probando_conexiones(net)
