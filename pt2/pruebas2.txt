@@ -1,0 +1,84 @@
+*** Resultados de las pruebas de conectividad ***
+
+--- Prueba: h1ST -> h2ND (Ping) (Debe funcionar) ---
+PING 10.0.2.10 (10.0.2.10) 56(84) bytes of data.
+From 10.0.3.10 icmp_seq=1 Destination Host Unreachable
+
+--- 10.0.2.10 ping statistics ---
+1 packets transmitted, 0 received, +1 errors, 100% packet loss, time 0ms
+
+
+Resultado: FALLO
+
+--- Prueba: h1ST -> hFTPALL (FTP) (Debe funcionar) ---
+172.16.50.11: inverse host lookup failed: Host name lookup failure
+(UNKNOWN) [172.16.50.11] 21 (ftp) : Connection timed out
+
+Resultado: FALLO
+
+--- Prueba: h1ST -> hFTPVP (FTP) (Debe fallar por firewall) ---
+172.16.50.10: inverse host lookup failed: Host name lookup failure
+(UNKNOWN) [172.16.50.10] 21 (ftp) : Connection timed out
+
+Resultado: FALLO
+
+--- Prueba: hVP -> hEXTERNAL (Ping) (Debe funcionar) ---
+PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.
+From 10.0.1.10 icmp_seq=1 Destination Host Unreachable
+
+--- 1.1.1.1 ping statistics ---
+1 packets transmitted, 0 received, +1 errors, 100% packet loss, time 0ms
+
+
+Resultado: FALLO
+
+--- Prueba: h2ND -> hEXTERNAL (Ping) (Debe fallar por firewall) ---
+PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.
+From 10.0.2.10 icmp_seq=1 Destination Host Unreachable
+
+--- 1.1.1.1 ping statistics ---
+1 packets transmitted, 0 received, +1 errors, 100% packet loss, time 0ms
+
+
+Resultado: FALLO
+
+--- Prueba: hVP -> hFTPVP (FTP) (Debe funcionar) ---
+172.16.50.10: inverse host lookup failed: Host name lookup failure
+(UNKNOWN) [172.16.50.10] 21 (ftp) : Connection timed out
+
+Resultado: FALLO
+
+--- Prueba: h2ND -> hREM (Ping) (Debe funcionar) ---
+PING 192.168.1.10 (192.168.1.10) 56(84) bytes of data.
+From 10.0.2.10 icmp_seq=1 Destination Host Unreachable
+
+--- 192.168.1.10 ping statistics ---
+1 packets transmitted, 0 received, +1 errors, 100% packet loss, time 0ms
+
+
+Resultado: FALLO
+
+--- Prueba: h1ST -> hPAYROLL (HTTP) (Debe funcionar) ---
+172.16.50.13: inverse host lookup failed: Host name lookup failure
+(UNKNOWN) [172.16.50.13] 80 (http) : Connection timed out
+
+Resultado: FALLO
+
+--- Prueba: hREM -> hFTPALL (FTP) (Debe funcionar) ---
+172.16.50.11: inverse host lookup failed: Host name lookup failure
+(UNKNOWN) [172.16.50.11] 21 (ftp) : Connection timed out
+
+Resultado: FALLO
+
+--- Prueba: hREM -> hFTPVP (FTP) (Debe fallar por firewall) ---
+172.16.50.10: inverse host lookup failed: Host name lookup failure
+(UNKNOWN) [172.16.50.10] 21 (ftp) : Connection timed out
+
+Resultado: FALLO
+
+--- Prueba: ARP Spoofing (hVP -> hFVP impersonando rINT) (Debe fallar por DAI) ---
+Salida del log de Suricata (fast.log):
+cat: /var/log/suricata/fast.log: No such file or directory
+Analisis: No se detectaron paquetes ARP maliciosos en el IDS.
+Resultado: ÉXITO (El ataque fue prevenido por DAI)
+
